@@ -15,8 +15,17 @@
     </style>
   </head>
   <body>
-    <a href="https://janek.ooo">janek.ooo</a><br />
-    <a href="https://conor.ooo">conor.ooo</a><br />
-    <a href="https://zac.ooo">zac.ooo</a><br />
+    <ul id="webring" style="list-style: none; padding: 0; margin: 0; text-align: center;;">
+      <li><a href="https://janek.ooo">janek.ooo</a></li>
+      <li><a href="https://conor.ooo">conor.ooo</a></li>
+      <li><a href="https://zac.ooo">zac.ooo</a></li>
+    </ul>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const list = document.getElementById('webring');
+        list.append(...[...list.children].sort(() => Math.random() - 0.5));
+      });
+    </script>
   </body>
 </html>
