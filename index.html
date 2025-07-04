@@ -13,16 +13,10 @@
         --bg-color: #fff;
       }
 
-      @media (max-width: 600px) {
-        :root {
-          --radius: 6em; /* smaller radius on narrow screens */
-        }
-      }
-
       @media (prefers-color-scheme: dark) {
         :root {
-          --link-color: #8ab4f8;
-          --bg-color: #000;
+            --link-color: #fff;
+            --bg-color: #000;
         }
       }
 
@@ -35,6 +29,12 @@
         margin: 0;
         font-size: 1.4rem;
         background: var(--bg-color);
+      }
+
+      @media (max-width: 900px) {
+        body {
+          font-size: 3rem;
+        }
       }
 
       /* Ring container */
@@ -85,7 +85,7 @@
         #webring a:hover {
           color: #6699ff;
         }
-        
+
         #webring a.disabled {
           color: #666;
         }
@@ -113,7 +113,14 @@
         const angleStep = 360 / count;
 
         /* Position each link around the circle */
-        const radiusValue = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')) * 16; // convert em to px
+        // Get CSS custom properties and convert --radius (in em) to pixels using the *actual* root font size
+        const rootStyles = getComputedStyle(document.documentElement);
+        const radiusEm = parseFloat(rootStyles.getPropertyValue('--radius'));
+        const fontSizePx = parseFloat(rootStyles.fontSize); // respects any font-size changes or browser zoom
+        const radiusValue = radiusEm * fontSizePx;
+        // Read rotation tunables from CSS so authors can tweak behaviour without touching JS
+        const rotationDurationMs = parseFloat(rootStyles.getPropertyValue('--rotation-duration')) * 1000; // seconds → ms
+        const hoverSlowdownFactor = parseFloat(rootStyles.getPropertyValue('--hover-slowdown-factor')) || 1;
         Array.from(list.children).forEach((li, idx) => {
           const angle = idx * angleStep; // position angle
           // Position link at this angle on the circle
@@ -124,22 +131,27 @@
           li.style.transform = `translate(${x}px, ${y}px) rotate(${angle + 180}deg)`;
         });
 
-        /* Smooth rotation animation */
+        /* Smooth rotation animation that honours --rotation-duration and --hover-slowdown-factor */
         let currentRotation = 0;
         let isHovered = false;
         let animationId;
+        let lastTimestamp;
 
-        function animate() {
-          const speed = isHovered ? 0.01 : 0.04; // degrees per frame (slower when hovered)
-          currentRotation += speed;
-          if (currentRotation >= 360) currentRotation -= 360;
+        function animate(timestamp) {
+          if (lastTimestamp === undefined) lastTimestamp = timestamp;
+          const delta = timestamp - lastTimestamp; // ms since last frame
+          lastTimestamp = timestamp;
+
+          const effectiveDuration = (isHovered ? rotationDurationMs * hoverSlowdownFactor : rotationDurationMs);
+          const deltaRotation = (delta / effectiveDuration) * 360; // degrees for this frame
+          currentRotation = (currentRotation + deltaRotation) % 360;
 
           list.style.transform = `rotate(${currentRotation}deg)`;
           animationId = requestAnimationFrame(animate);
         }
 
         // Start animation
-        animate();
+        animationId = requestAnimationFrame(animate);
 
         // Handle hover
         list.addEventListener('mouseenter', () => {
