@@ -3,6 +3,29 @@
   <head>
     <title>webring.ooo</title>
     <style>
+      :root {
+        /* Configurable constants */
+        --radius: 10em; /* desktop default */
+        --rotation-duration: 30s; /* one full revolution */
+        --hover-slowdown-factor: 4; /* multiplier when hovered */
+
+        --link-color: #111;
+        --bg-color: #fff;
+      }
+
+      @media (max-width: 600px) {
+        :root {
+          --radius: 6em; /* smaller radius on narrow screens */
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --link-color: #8ab4f8;
+          --bg-color: #000;
+        }
+      }
+
       body {
         display: flex;
         flex-direction: column;
@@ -11,11 +34,57 @@
         min-height: 100vh;
         margin: 0;
         font-size: 1.4rem;
+        background: var(--bg-color);
+      }
+
+      /* Ring container */
+      #webring {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        position: relative;
+        width: calc(var(--radius) * 2);
+        height: calc(var(--radius) * 2);
+        animation: spin var(--rotation-duration) linear infinite;
+      }
+
+      /* Slow-motion when user hovers any link */
+      #webring.slow {
+        animation-duration: calc(var(--rotation-duration) * var(--hover-slowdown-factor));
+      }
+
+      /* Respect reduced-motion preferences */
+      @media (prefers-reduced-motion: reduce) {
+        #webring,
+        #webring.slow {
+          animation: none;
+        }
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+
+      /* Individual list items positioned around the circle */
+      #webring li {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        /* Origin at element start so first letter aligns nearest to centre */
+        transform-origin: 0 0;
+      }
+
+      #webring a {
+        color: var(--link-color);
+        text-decoration: none;
+        display: inline-block;
+        transform: translate(-50%, -50%);
       }
     </style>
   </head>
   <body>
-    <ul id="webring" style="list-style: none; padding: 0; margin: 0; text-align: center;;">
+    <ul id="webring">
       <li><a href="https://janek.ooo">janek.ooo</a></li>
       <li><a href="https://conor.ooo">conor.ooo</a></li>
       <li><a href="https://zac.ooo">zac.ooo</a></li>
@@ -24,7 +93,30 @@
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const list = document.getElementById('webring');
-        list.append(...[...list.children].sort(() => Math.random() - 0.5));
+        const items = Array.from(list.children);
+
+        /* Preserve random order behaviour */
+        list.append(...items.sort(() => Math.random() - 0.5));
+
+        const count = items.length;
+        if (!count) return;
+        const angleStep = 360 / count;
+
+        /* Position each link around the circle */
+        const radiusValue = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')) * 16; // convert em to px
+        Array.from(list.children).forEach((li, idx) => {
+          const angle = idx * angleStep; // position angle
+          // Position link at this angle on the circle
+          const x = Math.cos(angle * Math.PI / 180) * radiusValue;
+          const y = Math.sin(angle * Math.PI / 180) * radiusValue;
+          
+          // Always rotate text so last letter touches the circle (pointing inward)
+          li.style.transform = `translate(${x}px, ${y}px) rotate(${angle + 180}deg)`;
+        });
+
+        /* Slow motion on hover for easier clicking */
+        list.addEventListener('mouseenter', () => list.classList.add('slow'));
+        list.addEventListener('mouseleave', () => list.classList.remove('slow'));
       });
     </script>
   </body>
