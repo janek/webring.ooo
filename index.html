@@ -6,7 +6,7 @@
     <style>
       :root {
         /* Configurable constants */
-        --radius: 10em; /* desktop default */
+        --radius: 5em; /* desktop default */
         --rotation-duration: 30s; /* one full revolution */
         --hover-slowdown-factor: 4; /* multiplier when hovered */
 
@@ -34,7 +34,11 @@
 
       @media (max-width: 600px) {
         body {
-          font-size: 2.5rem;
+          font-size: 2rem;
+        }
+
+        :root {
+          --radius: 3em; /* shrink ring on small screens */
         }
       }
 
