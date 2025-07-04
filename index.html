@@ -45,25 +45,13 @@
         position: relative;
         width: calc(var(--radius) * 2);
         height: calc(var(--radius) * 2);
-        animation: spin var(--rotation-duration) linear infinite;
-      }
-
-      /* Slow-motion when user hovers any link */
-      #webring.slow {
-        animation-duration: calc(var(--rotation-duration) * var(--hover-slowdown-factor));
       }
 
       /* Respect reduced-motion preferences */
       @media (prefers-reduced-motion: reduce) {
-        #webring,
-        #webring.slow {
-          animation: none;
+        #webring {
+          transform: none !important;
         }
-      }
-
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
       }
 
       /* Individual list items positioned around the circle */
@@ -80,6 +68,17 @@
         text-decoration: none;
         display: inline-block;
         transform: translate(-50%, -50%);
+        transition: color 0.2s ease;
+      }
+
+      #webring a:hover {
+        color: #ff6b6b;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #webring a:hover {
+          color: #ff8a8a;
+        }
       }
     </style>
   </head>
@@ -114,9 +113,37 @@
           li.style.transform = `translate(${x}px, ${y}px) rotate(${angle + 180}deg)`;
         });
 
-        /* Slow motion on hover for easier clicking */
-        list.addEventListener('mouseenter', () => list.classList.add('slow'));
-        list.addEventListener('mouseleave', () => list.classList.remove('slow'));
+        /* Smooth rotation animation */
+        let currentRotation = 0;
+        let isHovered = false;
+        let animationId;
+
+        function animate() {
+          const speed = isHovered ? 0.01 : 0.04; // degrees per frame (slower when hovered)
+          currentRotation += speed;
+          if (currentRotation >= 360) currentRotation -= 360;
+          
+          list.style.transform = `rotate(${currentRotation}deg)`;
+          animationId = requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        animate();
+
+        // Handle hover
+        list.addEventListener('mouseenter', () => {
+          isHovered = true;
+        });
+
+        list.addEventListener('mouseleave', () => {
+          isHovered = false;
+        });
+
+        // Respect reduced motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          cancelAnimationFrame(animationId);
+          list.style.transform = 'none';
+        }
       });
     </script>
   </body>
